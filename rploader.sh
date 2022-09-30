@@ -24,7 +24,7 @@ timezone="UTC"
 ntpserver="pool.ntp.org"
 userconfigfile="/home/tc/user_config.json"
 
-fullupdatefiles="custom_config.json custom_config_jun.json global_config.json modules.alias.3.json.gz modules.alias.4.json.gz rpext-index.json user_config.json dtc rploader.sh ds1621p.dts ds920p.dts"
+fullupdatefiles="custom_config.json custom_config_jun.json global_config.json modules.alias.3.json.gz modules.alias.4.json.gz rpext-index.json user_config.json rploader.sh"
 
 # END Do not modify after this line
 ######################################################################################################
@@ -1217,8 +1217,13 @@ function downloadupgradepat() {
 
 function extractdownloadpat() {
 
-    echo "Extracting pat file to find your files..."
+    upgradepatdir="/home/tc/upgradepat"
     temppat="/home/tc/temppat"
+
+    rm -rf $upgradepatdir
+    rm -rf $temppat
+
+    echo "Extracting pat file to find your files..."
     [ ! -d $temppat ] && mkdir $temppat
     cd $temppat
 
@@ -1232,8 +1237,8 @@ function extractdownloadpat() {
     else
         echo "PAT file is a smallupdate file "
         synoarchive.nano -xf ${updatepat}
-        tarfile=$(ls flash*update* | head -1)
-        if [ -f $tarfile ]; then
+        tarfile="$(ls flash*update* | head -1 2>/dev/null)"
+        if [ ! -z $tarfile ]; then
             tar xf $tarfile
             tar xf content.txz
         else
@@ -1242,7 +1247,6 @@ function extractdownloadpat() {
 
     fi
 
-    upgradepatdir="/home/tc/upgradepat"
     [ ! -d $upgradepatdir ] && mkdir $upgradepatdir
 
     [ -f rd.gz ] && echo "Copying rd.gz to $upgradepatdir" && cp rd.gz $upgradepatdir
@@ -1267,7 +1271,7 @@ function fullupgrade() {
     echo "Performing a full TCRP upgrade"
     echo "Warning some of your local files will be moved to /home/tc/old/xxxx.${backupdate}"
 
-    [ ! -d /home/tc/old ] && mkdir /home/tc/old
+    mkdir -p /home/tc/old
 
     for updatefile in ${fullupdatefiles}; do
 
@@ -1275,6 +1279,7 @@ function fullupgrade() {
 
         [ -f ${updatefile} ] && sudo mv $updatefile old/${updatefile}.${backupdate}
         sudo curl --insecure --silent --location "${rploaderrepo}/${updatefile}" -O
+        [ ! -f ${updatefile}] && mv old/${updatefile}.${backupdate} $updatefile
 
     done
 
